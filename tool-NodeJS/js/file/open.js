@@ -1,6 +1,6 @@
 var fs = require("fs");
 
-fs.open("../arti.txt", "r", function(err, data){
+fs.open("../arti.txt", "r+", function(err, fd){
 	if(err){
 		return console.error(err);
 	}
