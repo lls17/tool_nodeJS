@@ -1488,3 +1488,1259 @@ depth 表示最大递归的层数，如果对象很复杂，你可以指定层�
 	util.isError(new Error())  // true
 	util.isError(new TypeError())  // true
 	util.isError({ name: 'Error', message: 'an error occurred' })  // false
+
+#十六、Node.js 文件系统
+Node.js 提供一组类似 UNIX（POSIX）标准的文件操作API。 Node 导入**文件系统模块(fs)**语法如下所示：
+
+	var fs = require("fs")
+##1、异步和同步
+**Node.js 文件系统（fs 模块）模块中的方法均有异步和同步版本，例如读取文件内容的函数有异步的 fs.readFile() 和同步的 fs.readFileSync()。**
+
+异步的方法函数最后一个参数为回调函数，回调函数的第一个参数包含了错误信息(error)。
+
+建议大家是用异步方法，比起同步，异步方法性能更高，速度更快，而且没有阻塞。
+###实例
+创建 input.txt 文件，内容如下：
+	
+	菜鸟教程官网地址：www.runoob.com
+	文件读取实例
+
+创建 file.js 文件, 代码如下：
+
+	var fs = require("fs");
+
+	// 异步读取
+	fs.readFile('input.txt', function (err, data) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("异步读取: " + data.toString());
+	});
+
+	// 同步读取
+	var data = fs.readFileSync('input.txt');
+	console.log("同步读取: " + data.toString());
+
+	console.log("程序执行完毕。");
+以上代码执行结果如下：
+
+	$ node file.js 
+	同步读取: 菜鸟教程官网地址：www.runoob.com
+	文件读取实例
+
+	程序执行完毕。
+	异步读取: 菜鸟教程官网地址：www.runoob.com
+	文件读取实例
+
+##2、打开文件
+以下为在异步模式下打开文件的语法格式：
+
+	fs.open(path, flags[, mode], callback)
+###参数使用说明如下：
+
++ path - 文件的路径。
++ flags - 文件打开的行为。具体值详见下文。
++ mode - 设置文件模式(权限)，文件创建默认权限为 0666(可读，可写)。
++ callback - 回调函数，带有两个参数如：callback(err, fd)。
+
+###实例
+接下来我们创建 file.js 文件，并打开 input.txt 文件进行读写，代码如下所示：
+
+	var fs = require("fs");
+
+	// 异步打开文件
+	console.log("准备打开文件！");
+	fs.open('input.txt', 'r+', function(err, fd) {
+   		if (err) {
+       		return console.error(err);
+   		}
+  		console.log("文件打开成功！");     
+	});
+以上代码执行结果如下：
+	
+	$ node file.js 
+	准备打开文件！
+	文件打开成功！
+
+##3、获取文件信息
+以下为通过异步模式获取文件信息的语法格式：
+
+	fs.stat(path, callback)
+###参数
+
++ path - 文件路径。
++ callback - 回调函数，带有两个参数如：(err, stats), stats 是 fs.Stats 对象。
+
+fs.stat(path)执行后，会将stats类的实例返回给其回调函数。可以通过stats类中的提供方法判断文件的相关属性。例如判断是否为文件：
+
+	var fs = require('fs');
+
+	fs.stat('/Users/liuht/code/itbilu/demo/fs.js', function (err, stats) {
+	    console.log(stats.isFile()); 		//true
+	});
+
+###stats类中的方法有：
+
++ **stats.isFile()**	  如果是文件返回 true，否则返回 false。
++ **stats.isDirectory()**	如果是目录返回 true，否则返回 false。
++ **stats.isBlockDevice()**	如果是块设备返回 true，否则返回 false。
++ **stats.isCharacterDevice()**	如果是字符设备返回 true，否则返回 false。
++ **stats.isSymbolicLink()**	如果是软链接返回 true，否则返回 false。
++ **stats.isFIFO()**	如果是FIFO，返回true，否则返回 false。FIFO是UNIX中的一种特殊类型的命令管道。
++ **stats.isSocket()**	如果是 Socket 返回 true，否则返回 false。
+
+###实例
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+
+	console.log("准备打开文件！");
+	fs.stat('input.txt', function (err, stats) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log(stats);
+   		console.log("读取文件信息成功！");
+   
+   		// 检测文件类型
+   		console.log("是否为文件(isFile) ? " + stats.isFile());
+   		console.log("是否为目录(isDirectory) ? " + stats.isDirectory());    
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备打开文件！
+	{ dev: 16777220,
+  		mode: 33188,
+  		nlink: 1,
+  		uid: 501,
+  		gid: 20,
+  		rdev: 0,
+  		blksize: 4096,
+  		ino: 40333161,
+  		size: 61,
+  		blocks: 8,
+  		atime: Mon Sep 07 2015 17:43:55 GMT+0800 (CST),
+  		mtime: Mon Sep 07 2015 17:22:35 GMT+0800 (CST),
+  		ctime: Mon Sep 07 2015 17:22:35 GMT+0800 (CST) }
+	读取文件信息成功！
+	是否为文件(isFile) ? true
+	是否为目录(isDirectory) ? false
+
+##4、写入文件
+以下为异步模式下写入文件的语法格式：
+
+	fs.writeFile(file, data[, options], callback)
+**如果文件存在，该方法写入的内容会覆盖旧的文件内容。**
+###参数
+
++ file - 文件名或文件描述符。
++ data - 要写入文件的数据，可以是 String(字符串) 或 Buffer(流) 对象。
++ options - 该参数是一个对象，包含 {encoding, mode, flag}。默认编码为 utf8, 模式为 0666 ， flag 为 'w'
++ callback - 回调函数，回调函数只包含错误信息参数(err)，在写入失败时返回。
+###实例
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+
+	console.log("准备写入文件");
+	fs.writeFile('input.txt', '我是通过写入的文件内容！',  function(err) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("数据写入成功！");
+   		console.log("--------我是分割线-------------")
+   		console.log("读取写入的数据！");
+   		fs.readFile('input.txt', function (err, data) {
+      		if (err) {
+         		return console.error(err);
+      		}
+      		console.log("异步读取文件数据: " + data.toString());
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备写入文件
+	数据写入成功！
+	--------我是分割线-------------
+	读取写入的数据！
+	异步读取文件数据: 我是通过写入的文件内容
+
+##5、读取文件
+以下为异步模式下读取文件的语法格式：
+
+	fs.read(fd, buffer, offset, length, position, callback)
+该方法使用了文件描述符来读取文件。
+###参数
++ fd - 通过 fs.open() 方法返回的文件描述符。
++ buffer - 数据写入的缓冲区。
++ offset - 缓冲区写入的写入偏移量。
++ length - 要从文件中读取的字节数。
++ position - 文件读取的起始位置，如果 position 的值为 null，则会从当前文件指针的位置读取。
++ callback - 回调函数，有三个参数err, bytesRead, buffer，err 为错误信息， bytesRead 表示读取的字节数，buffer 为缓冲区对象。
+###实例
+input.txt 文件内容为：
+
+	菜鸟教程官网地址：www.runoob.com
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+	var buf = new Buffer(1024);
+
+	console.log("准备打开已存在的文件！");
+	fs.open('input.txt', 'r+', function(err, fd) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("文件打开成功！");
+   		console.log("准备读取文件：");
+   		fs.read(fd, buf, 0, buf.length, 0, function(err, bytes){
+      		if (err){
+         		console.log(err);
+      		}
+      		console.log(bytes + "  字节被读取");
+      
+      		// 仅输出读取的字节
+      		if(bytes > 0){
+         		console.log(buf.slice(0, bytes).toString());
+      		}
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备打开已存在的文件！
+	文件打开成功！
+	准备读取文件：
+	42  字节被读取
+	菜鸟教程官网地址：www.runoob.com
+
+##6、关闭文件
+以下为异步模式下关闭文件的语法格式：
+
+	fs.close(fd, callback)
+该方法使用了文件描述符来读取文件。
+###参数
++ fd - 通过 fs.open() 方法返回的文件描述符。
++ callback - 回调函数，没有参数。
+###实例
+input.txt 文件内容为：
+
+	菜鸟教程官网地址：www.runoob.com
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+	var buf = new Buffer(1024);
+
+	console.log("准备打开文件！");
+	fs.open('input.txt', 'r+', function(err, fd) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("文件打开成功！");
+   		console.log("准备读取文件！");
+   		fs.read(fd, buf, 0, buf.length, 0, function(err, bytes){
+      		if (err){
+         		console.log(err);
+      		}
+
+      		// 仅输出读取的字节
+      		if(bytes > 0){
+         		console.log(buf.slice(0, bytes).toString());
+      		}
+
+      		// 关闭文件
+      		fs.close(fd, function(err){
+         		if (err){
+            		console.log(err);
+         		} 
+         		console.log("文件关闭成功");
+      		});
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备打开文件！
+	文件打开成功！
+	准备读取文件！
+	菜鸟教程官网地址：www.runoob.com
+	文件关闭成功
+
+##7、截取文件
+以下为异步模式下截取文件的语法格式：
+
+	fs.ftruncate(fd, len, callback)
+该方法使用了文件描述符来读取文件。
+###参数
++ fd - 通过 fs.open() 方法返回的文件描述符。
++ len - 文件内容截取的长度。
++ callback - 回调函数，没有参数。
+###实例
+input.txt 文件内容为：
+
+	site:www.runoob.com
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+	var buf = new Buffer(1024);
+
+	console.log("准备打开文件！");
+	fs.open('input.txt', 'r+', function(err, fd) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("文件打开成功！");
+   		console.log("截取10字节后的文件内容。");
+   
+   		// 截取文件
+   		fs.ftruncate(fd, 10, function(err){
+      		if (err){
+         		console.log(err);
+      		} 
+      		console.log("文件截取成功。");
+      		console.log("读取相同的文件"); 
+      		fs.read(fd, buf, 0, buf.length, 0, function(err, bytes){
+         		if (err){
+            		console.log(err);
+         		}
+
+		        // 仅输出读取的字节
+         		if(bytes > 0){
+            		console.log(buf.slice(0, bytes).toString());
+         		}	
+
+	           // 关闭文件
+         		fs.close(fd, function(err){
+            		if (err){
+               			console.log(err);
+            		} 
+            		console.log("文件关闭成功！");
+         		});
+      		});
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备打开文件！
+	文件打开成功！
+	截取10字节后的文件内容。
+	文件截取成功。
+	读取相同的文件
+	site:www.r
+	文件关闭成功
+
+##8、删除文件
+以下为删除文件的语法格式：
+
+	fs.unlink(path, callback)
+###参数
++ path - 文件路径。
++ callback - 回调函数，没有参数。
+###实例
+input.txt 文件内容为：
+
+	site:www.runoob.com
+接下来我们创建 file.js 文件，代码如下所示：
+	var fs = require("fs");
+
+	console.log("准备删除文件！");
+	fs.unlink('input.txt', function(err) {
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("文件删除成功！");
+	});
+以上代码执行结果如下：
+	
+	$ node file.js 
+	准备删除文件！
+	文件删除成功！
+	再去查看 input.txt 文件，发现已经不存在了。
+
+##9、创建目录
+以下为创建目录的语法格式：
+
+	fs.mkdir(path[, mode], callback)
+###参数
++ path - 文件路径。
++ mode - 设置目录权限，默认为 0777。
++ callback - 回调函数，没有参数。
+###实例
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+
+	console.log("创建目录 /tmp/test/");
+	fs.mkdir("/tmp/test/",function(err){
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("目录创建成功。");
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	创建目录 /tmp/test/
+	目录创建成功。
+
+##10、读取目录
+以下为读取目录的语法格式：
+
+	fs.readdir(path, callback)
+###参数
++ path - 文件路径。
++ callback - 回调函数，回调函数带有两个参数err, files，err 为错误信息，files 为 目录下的文件数组列表。
+###实例
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+
+	console.log("查看 /tmp 目录");
+	fs.readdir("/tmp/",function(err, files){
+   		if (err) {
+       		return console.error(err);
+   		}
+   		files.forEach( function (file){
+       		console.log( file );
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	查看 /tmp 目录
+	input.out
+	output.out
+	test
+	test.txt
+
+##11、删除目录
+以下为删除目录的语法格式：
+
+	fs.rmdir(path, callback)
+###参数
++ path - 文件路径。
++ callback - 回调函数，没有参数。
+###实例
+接下来我们创建 file.js 文件，代码如下所示：
+
+	var fs = require("fs");
+	// 执行前创建一个空的 /tmp/test 目录
+	
+	console.log("准备删除目录 /tmp/test");
+	fs.rmdir("/tmp/test",function(err){
+   		if (err) {
+       		return console.error(err);
+   		}
+   		console.log("读取 /tmp 目录");
+   		fs.readdir("/tmp/",function(err, files){
+      		if (err) {
+          		return console.error(err);
+      		}
+      		files.forEach( function (file){
+          		console.log( file );
+      		});
+   		});
+	});
+以上代码执行结果如下：
+
+	$ node file.js 
+	准备删除目录 /tmp/test
+	读取 /tmp 目录
+	……
+
+#十七、Node.js GET/POST请求
+在很多场景中，我们的服务器都需要跟用户的浏览器打交道，如表单提交。
+
+表单提交到服务器一般都使用 GET/POST 请求。本章节我们将为大家介绍 Node.js GET/POST请求。
+###获取GET请求内容
+由于GET请求直接被嵌入在路径中，URL是完整的请求路径，包括了?后面的部分，因此你可以手动解析后面的内容作为GET请求的参数。
+
+node.js 中 url 模块中的 parse 函数提供了这个功能。
+###实例
+	var http = require('http');
+	var url = require('url');
+	var util = require('util');
+ 
+	http.createServer(function(req, res){
+	    res.writeHead(200, {'Content-Type': 'text/plain; charset=utf-8'});
+	    res.end(util.inspect(url.parse(req.url, true)));
+	}).listen(3000);
+
+##1、获取 URL 的参数
+我们可以使用 url.parse 方法来解析 URL 中的参数，代码如下：
+
+	var http = require('http');
+	var url = require('url');
+	var util = require('util');
+ 
+	http.createServer(function(req, res){
+    	res.writeHead(200, {'Content-Type': 'text/plain'});
+ 
+	    // 解析 url 参数
+    	var params = url.parse(req.url, true).query;
+    	res.write("网站名：" + params.name);
+    	res.write("\n");
+    	res.write("网站 URL：" + params.url);
+    	res.end();
+ 
+	}).listen(3000);
+在浏览器中访问 http://localhost:3000/user?name=菜鸟教程&url=www.runoob.com
+
+##2、获取 POST 请求内容
+POST 请求的内容全部的都在请求体中，http.ServerRequest 并没有一个属性内容为请求体，原因是等待请求体传输可能是一件耗时的工作。
+
+比如上传文件，而很多时候我们可能并不需要理会请求体的内容，恶意的POST请求会大大消耗服务器的资源，所有node.js 默认是不会解析请求体的，当你需要的时候，需要手动来做。
+基本语法结构说明
+
+	var http = require('http');
+	var querystring = require('querystring');
+ 
+	http.createServer(function(req, res){
+	    // 定义了一个post变量，用于暂存请求体的信息
+    	var post = '';     
+ 
+    	// 通过req的data事件监听函数，每当接受到请求体的数据，就累加到post变量中
+    	req.on('data', function(chunk){    
+        	post += chunk;
+    	});
+ 
+    	// 在end事件触发后，通过querystring.parse将post解析为真正的POST请求格式，然后向客户端返回。
+   		req.on('end', function(){    
+        	post = querystring.parse(post);
+        	res.end(util.inspect(post));
+    	});
+	}).listen(3000);
+以下实例表单通过 POST 提交并输出数据：
+
+	var http = require('http');
+	var querystring = require('querystring');
+ 
+	var postHTML = 
+ 	 '<html><head><meta charset="utf-8"><title>菜鸟教程 Node.js 实例</title></head>
+	<body>
+		<form method="post">
+			网站名： <input name="name"><br>	
+			网站 URL： <input name="url"><br>
+			<input type="submit">
+		</form>
+	</body></html>';
+ 
+	http.createServer(function (req, res) {
+  		var body = "";
+  		req.on('data', function (chunk) {
+    		body += chunk;
+  		});
+  		req.on('end', function () {
+    		// 解析参数
+    		body = querystring.parse(body);
+		    // 设置响应头部信息及编码
+		    res.writeHead(200, {'Content-Type': 'text/html; charset=utf8'});
+ 
+    		if(body.name && body.url) { // 输出提交的数据
+        		res.write("网站名：" + body.name);
+        		res.write("<br>");
+       			res.write("网站 URL：" + body.url);
+    		} else {  // 输出表单
+        		res.write(postHTML);
+    		}
+    		res.end();
+  		});
+	}).listen(3000);
+
+#十八、Node.js Web 模块
+##1、什么是 Web 服务器？
+Web服务器一般指网站服务器，是指驻留于因特网上某种类型计算机的程序，Web服务器的基本功能就是提供Web信息浏览服务。它只需支持**HTTP协议、HTML文档格式及URL**，与客户端的网络浏览器配合。
+
+大多数 web 服务器都支持服务端的脚本语言（php、python、ruby）等，并通过脚本语言从数据库获取数据，将结果返回给客户端浏览器。
+
+目前最主流的三个Web服务器是Apache、Nginx、IIS。
+##2、Web 应用架构
+![结构图](http://www.runoob.com/wp-content/uploads/2015/09/web_architecture.jpg)
+
++ **Client** - 客户端，一般指浏览器，浏览器可以通过 HTTP 协议向服务器请求数据。
++ **Server** - 服务端，一般指 Web 服务器，可以接收客户端请求，并向客户端发送响应数据。
++ **Business** - 业务层， 通过 Web 服务器处理应用程序，如与数据库交互，逻辑运算，调用外部程序等。
++ **Data** - 数据层，一般由数据库组成。
+
+##3、使用 Node 创建 Web 服务器
+Node.js 提供了 http 模块，http 模块主要用于搭建 HTTP 服务端和客户端，使用 HTTP 服务器或客户端功能必须调用 http 模块，代码如下：
+
+	var http = require('http');
+以下是演示一个最基本的 HTTP 服务器架构（使用8081端口），创建 server.js 文件，代码如下所示：
+
+	var http = require('http');
+	var fs = require('fs');
+	var url = require('url');
+
+	// 创建服务器
+	http.createServer( function (request, response) {  
+   		// 解析请求，包括文件名
+   		var pathname = url.parse(request.url).pathname;
+   
+   		// 输出请求的文件名
+   		console.log("Request for " + pathname + " received.");
+   
+   		// 从文件系统中读取请求的文件内容
+   		fs.readFile(pathname.substr(1), function (err, data) {
+      		if (err) {
+         		console.log(err);
+         		// HTTP 状态码: 404 : NOT FOUND
+         		// Content Type: text/plain
+         		response.writeHead(404, {'Content-Type': 'text/html'});
+      		}else{	         
+         		// HTTP 状态码: 200 : OK
+         		// Content Type: text/plain
+         		response.writeHead(200, {'Content-Type': 'text/html'});	
+         
+         		// 响应文件内容
+         		response.write(data.toString());		
+      		}
+      		//  发送响应数据
+      		response.end();
+   		});   
+	}).listen(8081);
+
+	// 控制台会输出以下信息
+	console.log('Server running at http://127.0.0.1:8081/');
+接下来我们在该目录下创建一个 index.htm 文件，代码如下：
+
+	<html>
+		<head>
+			<title>Sample Page</title>
+		</head>
+		<body>
+			Hello World!
+		</body>
+	</html>
+执行 server.js 文件：
+
+	$ node server.js
+	Server running at http://127.0.0.1:8081/
+
+接着我们在浏览器中打开地址：http://127.0.0.1:8081/index.htm
+
+##4、使用 Node 创建 Web 客户端
+Node 创建 Web 客户端需要引入 http 模块，创建 client.js 文件，代码如下所示：
+
+	var http = require('http');
+
+	// 用于请求的选项
+	var options = {
+   		host: 'localhost',
+   		port: '8081',
+   		path: '/index.htm'  
+	};
+
+	// 处理响应的回调函数
+	var callback = function(response){
+   		// 不断更新数据
+   		var body = '';
+   		response.on('data', function(data) {
+      		body += data;
+   		});
+   
+   		response.on('end', function() {
+	      	// 数据接收完成
+      		console.log(body);
+   		});
+	}
+	// 向服务端发送请求
+	var req = http.request(options, callback);
+	req.end();
+新开一个终端，执行 client.js 文件，输出结果如下：
+
+	$ node client.js
+	<html>
+		<head>
+			<title>Sample Page</title>
+		</head>
+		<body>
+			Hello World!
+		</body>
+	</html>
+执行 server.js 的控制台输出信息如下：
+
+	Server running at http://127.0.0.1:8081/
+	Request for /index.htm received.   # 客户端请求信息
+
+#十九、Node.js Express 框架
+##1、Express 简介
+Express 是一个简洁而灵活的 node.js Web应用框架, 提供了一系列强大特性帮助你创建各种 Web 应用，和丰富的 HTTP 工具。
+
+使用 Express 可以快速地搭建一个完整功能的网站。
+###Express 框架核心特性：
+
++ 可以设置中间件来响应 HTTP 请求。
++ 定义了路由表用于执行不同的 HTTP 请求动作。
++ 可以通过向模板传递参数来动态渲染 HTML 页面。
+
+##2、安装 Express
+安装 Express 并将其保存到依赖列表中：
+
+	$ cnpm install express --save
+以上命令会将 Express 框架安装在当前目录的 node_modules 目录中， node_modules 目录下会自动创建 express 目录。以下几个重要的模块是需要与 express 框架一起安装的：
+
++ **body-parser** - node.js 中间件，用于处理 JSON, Raw, Text 和 URL 编码的数据。
++ **cookie-parser** - 这就是一个解析Cookie的工具。通过req.cookies可以取到传过来的cookie，并把它们转成对象。
++ **multer** - node.js 中间件，用于处理 enctype="multipart/form-data"（设置表单的MIME编码）的表单数据。
+
+安装
+
+	$ cnpm install body-parser --save
+	$ cnpm install cookie-parser --save
+	$ cnpm install multer --save
+安装完后，我们可以查看下 express 使用的版本号：
+
+	$ cnpm list express
+	/data/www/node
+	└── express@4.15.2  -> /Users/tianqixin/www/node/node_modules/.4.15.2@express
+
+##3、第一个 Express 框架实例
+接下来我们使用 Express 框架来输出 "Hello World"。
+
+以下实例中我们引入了 express 模块，并在客户端发起请求后，响应 "Hello World" 字符串。
+
+创建 express_demo.js 文件，代码如下所示：
+
+	//express_demo.js 文件
+	var express = require('express');
+	var app = express();
+ 
+	app.get('/', function (req, res) {
+   		res.send('Hello World');
+	});
+ 
+	var server = app.listen(8081, function () {
+ 
+  		var host = server.address().address
+  		var port = server.address().port
+ 
+  		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+ 
+	})
+执行以上代码：
+
+	$ node express_demo.js 
+	应用实例，访问地址为 http://0.0.0.0:8081
+
+##4、请求和响应
+Express 应用使用回调函数的参数： request 和 response 对象来处理请求和响应的数据。
+
+	app.get('/', function (req, res) {
+   		// --
+	})
+###request 和 response 对象的具体介绍：
+**Request 对象** - request 对象表示 HTTP 请求，包含了请求查询字符串，参数，内容，HTTP 头部等属性。常见属性有：
+
++ req.app：当callback为外部文件时，用req.app访问express的实例
++ req.baseUrl：获取路由当前安装的URL路径
++ req.body / req.cookies：获得「请求主体」/ Cookies
++ req.fresh / req.stale：判断请求是否还「新鲜」
++ req.hostname / req.ip：获取主机名和IP地址
++ req.originalUrl：获取原始请求URL
++ req.params：获取路由的parameters
++ req.path：获取请求路径
++ req.protocol：获取协议类型
++ req.query：获取URL的查询参数串
++ req.route：获取当前匹配的路由
++ req.subdomains：获取子域名
++ req.accepts()：检查可接受的请求的文档类型
++ req.acceptsCharsets / req.acceptsEncodings / req.acceptsLanguages：返回指定字符集的第一个可接受字符编码
++ req.get()：获取指定的HTTP请求头
++ req.is()：判断请求头Content-Type的MIME类型
+
+**Response 对象** - response 对象表示 HTTP 响应，即在接收到请求时向客户端发送的 HTTP 响应数据。常见属性有：
+
++ res.app：同req.app一样
++ res.append()：追加指定HTTP头
++ res.set()在res.append()后将重置之前设置的头
++ res.cookie(name，value [，option])：设置Cookie
++ opition: domain / expires / httpOnly / maxAge / path / secure / signed
++ res.clearCookie()：清除Cookie
++ res.download()：传送指定路径的文件
++ res.get()：返回指定的HTTP头
++ res.json()：传送JSON响应
++ res.jsonp()：传送JSONP响应
++ res.location()：只设置响应的Location HTTP头，不设置状态码或者close response
++ res.redirect()：设置响应的Location HTTP头，并且设置状态码302
++ res.send()：传送HTTP响应
++ res.sendFile(path [，options] [，fn])：传送指定路径的文件 -会自动根据文件extension设定Content-Type
++ res.set()：设置HTTP头，传入object可以一次设置多个头
++ res.status()：设置HTTP状态码
++ res.type()：设置Content-Type的MIME类型
+
+##5、路由
+我们已经了解了 HTTP 请求的基本应用，而路由决定了由谁(指定脚本)去响应客户端请求。
+
+在HTTP请求中，我们可以通过路由提取出请求的URL以及GET/POST参数。
+
+接下来我们扩展 Hello World，添加一些功能来处理更多类型的 HTTP 请求。
+
+创建 express_demo2.js 文件，代码如下所示：
+
+	var express = require('express');
+	var app = express();
+ 
+	//  主页输出 "Hello World"
+	app.get('/', function (req, res) {
+   		console.log("主页 GET 请求");
+   		res.send('Hello GET');
+	});
+ 
+	//  POST 请求
+	app.post('/', function (req, res) {
+   		console.log("主页 POST 请求");
+   		res.send('Hello POST');
+	});
+ 
+	//  /del_user 页面响应
+	app.get('/del_user', function (req, res) {
+   		console.log("/del_user 响应 DELETE 请求");
+   		res.send('删除页面');
+	});
+ 
+	//  /list_user 页面 GET 请求
+	app.get('/list_user', function (req, res) {
+   		console.log("/list_user GET 请求");
+   		res.send('用户列表页面');
+	});
+ 
+	// 对页面 abcd, abxcd, ab123cd, 等响应 GET 请求
+	app.get('/ab*cd', function(req, res) {   
+   		console.log("/ab*cd GET 请求");
+   		res.send('正则匹配');
+	});
+ 
+	var server = app.listen(8081, function () {
+		var host = server.address().address
+  		var port = server.address().port
+ 
+		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+	});
+执行以上代码：
+
+	$ node express_demo2.js 
+	应用实例，访问地址为 http://0.0.0.0:8081
+
+##6、静态文件
+Express 提供了内置的中间件 **express.static** 来设置静态文件如：图片， CSS, JavaScript 等。
+
+你可以使用 express.static 中间件来设置静态文件路径。例如，如果你将图片， CSS, JavaScript 文件放在 public 目录下，你可以这么写：
+
+	app.use(express.static('public'));
+我们可以到 public/images 目录下放些图片，如下所示：
+
+	node_modules
+	server.js
+	public/
+	public/images
+	public/images/logo.png
+让我们再修改下 "Hello World" 应用添加处理静态文件的功能。创建 express_demo3.js 文件，代码如下所示：
+
+	var express = require('express');
+	var app = express();
+ 
+	app.use(express.static('public'));
+ 
+	app.get('/', function (req, res) {
+	   res.send('Hello World');
+	});
+ 
+	var server = app.listen(8081, function () {
+  		var host = server.address().address
+  		var port = server.address().port
+ 
+  		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+	});
+执行以上代码：
+
+	$ node express_demo3.js 
+	应用实例，访问地址为 http://0.0.0.0:8081
+在浏览器中访问 http://127.0.0.1:8081/images/logo.png（本实例采用了菜鸟教程的logo）
+
+##7、GET 方法
+以下实例演示了在表单中通过 GET 方法提交两个参数，我们可以使用 server.js 文件内的 process_get 路由器来处理输入：index.htm 文件代码：
+
+	<html>
+		<body>
+			<form action="http://127.0.0.1:8081/process_get" method="GET">
+				First Name: <input type="text" name="first_name">  <br>
+				Last Name: <input type="text" name="last_name">
+				<input type="submit" value="Submit">
+			</form>
+		</body>
+	</html>
+
+server.js 文件代码：
+
+	var express = require('express');
+	var app = express();
+ 
+	app.use(express.static('public'));
+ 
+	app.get('/index.htm', function (req, res) {
+		res.sendFile( __dirname + "/" + "index.htm" );
+	})；
+ 
+	app.get('/process_get', function (req, res) {
+ 
+   		// 输出 JSON 格式
+   		response = {
+       		first_name:req.query.first_name,
+       		last_name:req.query.last_name
+   		};
+   		console.log(response);
+   		res.end(JSON.stringify(response));
+	})；
+ 
+	var server = app.listen(8081, function () {
+ 
+  		var host = server.address().address
+  		var port = server.address().port
+ 
+  		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+	})；
+执行以上代码：
+
+	node server.js 
+	应用实例，访问地址为 http://0.0.0.0:8081
+浏览器访问 http://127.0.0.1:8081/index.htm
+
+##8、POST 方法
+以下实例演示了在表单中通过 POST 方法提交两个参数，我们可以使用 server.js 文件内的 **process_post** 路由器来处理输入：index.htm 文件代码：
+
+	<html>
+		<body>
+			<form action="http://127.0.0.1:8081/process_post" method="POST">
+				First Name: <input type="text" name="first_name">  <br>
+				Last Name: <input type="text" name="last_name">
+				<input type="submit" value="Submit">
+			</form>
+		</body>
+	</html>
+
+server.js 文件代码：
+
+	var express = require('express');
+	var app = express();
+	var bodyParser = require('body-parser');
+ 
+	// 创建 application/x-www-form-urlencoded 编码解析
+	var urlencodedParser = bodyParser.urlencoded({ extended: false })
+ 
+	app.use(express.static('public'));
+ 
+	app.get('/index.htm', function (req, res) {
+   		res.sendFile( __dirname + "/" + "index.htm" );
+	})；
+ 
+	app.post('/process_post', urlencodedParser, function (req, res) {
+ 
+   		// 输出 JSON 格式
+   		response = {
+       		first_name:req.body.first_name,
+       		last_name:req.body.last_name
+   		};
+   		console.log(response);
+   		res.end(JSON.stringify(response));
+	});
+ 
+	var server = app.listen(8081, function () {
+		var host = server.address().address
+  		var port = server.address().port
+ 
+  		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+	})
+执行以上代码：
+
+	$ node server.js
+	应用实例，访问地址为 http://0.0.0.0:8081
+浏览器访问 http://127.0.0.1:8081/index.htm
+
+##9、文件上传
+以下我们创建一个用于上传文件的表单，使用 POST 方法，表单 enctype 属性设置为 multipart/form-data。index.htm 文件代码：
+
+	<html>
+		<head>
+			<title>文件上传表单</title>
+		</head>
+		<body>
+			<h3>文件上传：</h3>
+			选择一个文件上传: <br />
+			<form action="/file_upload" method="post" enctype="multipart/form-data">
+				<input type="file" name="image" size="50" />
+				<br />
+				<input type="submit" value="上传文件" />
+			</form>
+		</body>
+	</html>
+
+server.js 文件代码：
+
+	var express = require('express');
+	var app = express();
+	var fs = require("fs");
+
+	var bodyParser = require('body-parser');
+	var multer  = require('multer');
+
+	app.use(express.static('public'));
+	app.use(bodyParser.urlencoded({ extended: false }));
+	app.use(multer({ dest: '/tmp/'}).array('image'));
+
+	app.get('/index.htm', function (req, res) {
+			res.sendFile( __dirname + "/" + "index.htm" );
+	});
+
+	app.post('/file_upload', function (req, res) {
+    	console.log(req.files[0]);  // 上传的文件信息
+
+		var des_file = __dirname + "/" + req.files[0].originalname;
+		fs.readFile( req.files[0].path, function (err, data) {
+			fs.writeFile(des_file, data, function (err) {
+	 			if( err ){
+	      			console.log( err );
+	 			}else{
+	       			response = {
+	           			message:'File uploaded successfully', 
+	           			filename:req.files[0].originalname
+	      			};
+	  			}
+	  			console.log( response );
+	  			res.end( JSON.stringify( response ) );
+			});
+		});
+	})
+
+	var server = app.listen(8081, function () {
+	  	var host = server.address().address
+			var port = server.address().port
+
+		console.log("应用实例，访问地址为 http://%s:%s", host, port)
+	});
+执行以上代码：
+
+	$ node server.js 
+	应用实例，访问地址为 http://0.0.0.0:8081
+浏览器访问 http://127.0.0.1:8081/index.htm
+
+##10、Cookie 管理
+我们可以使用中间件向 Node.js 服务器发送 cookie 信息，以下代码输出了客户端发送的 cookie 信息：
+
+	// express_cookie.js 文件
+	var express = require('express')
+	var cookieParser = require('cookie-parser')
+ 
+	var app = express()
+	app.use(cookieParser())
+ 
+	app.get('/', function(req, res) {
+  		console.log("Cookies: ", req.cookies)
+	})；
+ 
+	app.listen(8081)
+执行以上代码：
+
+	$ node express_cookie.js 
+现在你可以访问 http://127.0.0.1:8081 并查看终端信息的输出
+
+#二十、Node.js 多进程
+我们都知道 **Node.js 是以单线程的模式运行的，但它使用的是事件驱动来处理并发**，这样有助于我们在多核 cpu 的系统上创建多个子进程，从而提高性能。
+
+每个子进程总是带有三个流对象：**child.stdin, child.stdout 和child.stderr**。他们可能会共享父进程的 stdio 流，或者也可以是独立的被导流的流对象。
+
+Node 提供了 child_process 模块来创建子进程，方法有：
+
++ **exec** - child_process.exec 使用子进程执行命令，缓存子进程的输出，并将子进程的输出以回调函数参数的形式返回。
++ **spawn** - child_process.spawn 使用指定的命令行参数创建新进程。
++ **fork** - child_process.fork 是 spawn()的特殊形式，用于在子进程中运行的模块，如 fork('./son.js') 相当于 spawn('node', ['./son.js']) 。与spawn方法不同的是，fork会在父进程与子进程之间，建立一个通信管道，用于进程之间的通信。
+
+#二十一、Node.js 连接 MySQL
+本章节我们将为大家介绍如何使用 Node.js 来连接 MySQL，并对数据库进行操作。
+
+本教程使用到的 Websites 表 SQL 文件：websites.sql。
+###安装驱动
+本教程使用了淘宝定制的 cnpm 命令进行安装：
+
+	$ cnpm install mysql
+###连接数据库
+在以下实例中修改根据你的实际配置修改数据库用户名、及密码及数据库名：
+
+test.js 文件代码：
+
+	var mysql = require('mysql');
+	var connection = mysql.createConnection({
+  		host     : 'localhost',
+  		user     : 'root',
+  		password : '123456',
+  		database : 'test'
+	});
+ 
+	connection.connect();
+ 
+	connection.query('SELECT 1 + 1 AS solution', function (error, results, fields) {
+  		if (error) throw error;
+  		console.log('The solution is: ', results[0].solution);
+	});
+执行以下命令输出就结果为：
+
+	$ node test.js
+	The solution is: 2
+
+##1、数据库操作( CURD )
+在进行数据库操作前，你需要将本站提供的 Websites 表 SQL 文件websites.sql 导入到你的 MySQL 数据库中。
+
+本教程测试的 MySQL 用户名为 root，密码为 123456，数据库为 test，你需要根据自己配置情况修改。
+
+##2、查询数据
+将上面我们提供的 SQL 文件导入数据库后，执行以下代码即可查询出数据：
+
+	var mysql  = require('mysql');  
+	 
+	var connection = mysql.createConnection({     
+	  host     : 'localhost',       
+	  user     : 'root',              
+	  password : '123456',       
+	  port: '3306',                   
+	  database: 'test', 
+	}); 
+	 
+	connection.connect();
+	 
+	var  sql = 'SELECT * FROM websites';
+	//查
+	connection.query(sql,function (err, result) {
+        if(err){
+          console.log('[SELECT ERROR] - ',err.message);
+          return;
+        }
+ 
+       console.log('---------------SELECT----------------------------');
+       console.log(result);
+	});
+ 
+	connection.end();
+执行以下命令输出就结果为：
+
+	$ node test.js
+	--------------------------SELECT----------------------------
+	[ RowDataPacket {
+	    id: 1,
+	    name: 'Google',
+	    url: 'https://www.google.cm/',
+	    alexa: 1,
+    	country: 'USA' },
+  	RowDataPacket {
+	    id: 2,
+	    name: '淘宝',
+	    url: 'https://www.taobao.com/',
+    	alexa: 13,
+    	country: 'CN' },
+  	RowDataPacket {
+	    id: 3,
+	    name: '菜鸟教程',
+    	url: 'http://www.runoob.com/',
+    	alexa: 4689,
+    	country: 'CN' } ]
+
+##3、插入数据
+我们可以向数据表 websties 插入数据：
+###插入数据
+
+	var mysql  = require('mysql');  
+	var connection = mysql.createConnection({     
+  		host     : 'localhost',       
+  		user     : 'root',              
+  		password : '123456',       
+  		port: '3306',                   
+  		database: 'test', 
+	}); 
+ 
+	connection.connect();
+ 
+	var  addSql = 'INSERT INTO websites(Id,name,url,alexa,country) VALUES(0,?,?,?,?)';
+	var  addSqlParams = ['菜鸟工具', 'https://c.runoob.com','23453', 'CN'];
+	//增
+	connection.query(addSql,addSqlParams,function (err, result) {
+        if(err){
+    	     console.log('[INSERT ERROR] - ',err.message);
+    	     return;
+        }        
+ 
+       console.log('--------------------------INSERT----------------------------');
+       //console.log('INSERT ID:',result.insertId);        
+       console.log('INSERT ID:',result);        
+});
+ 
+	connection.end();
+执行以下命令输出就结果为：
+
+	$ node test.js
+
+##4、更新数据
+我们也可以对数据库的数据进行修改：
+
+	var mysql  = require('mysql');  
+ 
+	var connection = mysql.createConnection({     
+  		host     : 'localhost',       
+  		user     : 'root',              
+  		password : '123456',       
+  		port: '3306',                   
+  		database: 'test', 
+	}); 
+ 
+	connection.connect();
+ 
+	var modSql = 'UPDATE websites SET name = ?,url = ? WHERE Id = ?';
+	var modSqlParams = ['菜鸟移动站', 'https://m.runoob.com',6];
+	//改
+	connection.query(modSql,modSqlParams,function (err, result) {
+   		if(err){
+        	console.log('[UPDATE ERROR] - ',err.message);
+         	return;
+   		}        
+  		console.log('--------------------------UPDATE----------------------------');
+		console.log('UPDATE affectedRows',result.affectedRows);
+	});
+ 
+	connection.end();
+执行以下命令输出就结果为：
+
+	--------------------------UPDATE----------------------------
+	UPDATE affectedRows 1
+##5、删除数据
+我们可以使用以下代码来删除 id 为 6 的数据:
+
+	var mysql  = require('mysql');  
+ 
+	var connection = mysql.createConnection({     
+  		host     : 'localhost',       
+  		user     : 'root',              
+  		password : '123456',       
+  		port: '3306',                   
+  		database: 'test', 
+	}); 
+ 
+	connection.connect();
+ 
+	var delSql = 'DELETE FROM websites where id=6';
+	//删
+	connection.query(delSql,function (err, result) {
+        if(err){
+          console.log('[DELETE ERROR] - ',err.message);
+          return;
+        }        
+ 
+       console.log('--------------------------DELETE----------------------------');
+       console.log('DELETE affectedRows',result.affectedRows);
+	});
+ 
+	connection.end();
+执行以下命令输出就结果为：
+
+	--------------------------DELETE----------------------------
+	DELETE affectedRows 1
